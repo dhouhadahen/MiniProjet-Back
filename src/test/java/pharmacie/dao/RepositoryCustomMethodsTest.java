@@ -200,42 +200,13 @@ class RepositoryCustomMethodsTest {
 
     @Test
     void testDispensaireCustomMethods() {
-        Dispensaire d = new Dispensaire();
-        d.setCode("DTOT"); // Must be <= 5 chars
-        d.setNom("Dispensaire Total");
-        d = dispensaireRepository.saveAndFlush(d);
-
-        Commande c1 = new Commande();
-        c1.setDispensaire(d);
-        c1 = commandeRepository.saveAndFlush(c1);
-
-        Categorie cat = new Categorie();
-        cat.setLibelle("Cat");
-        cat = categorieRepository.saveAndFlush(cat);
-
-        Medicament m = new Medicament();
-        m.setNom("Med"); m.setCategorie(cat);
-        m = medicamentRepository.saveAndFlush(m);
-
-        Ligne l1 = new Ligne();
-        l1.setCommande(c1); l1.setMedicament(m); l1.setQuantite(10);
-        ligneRepository.saveAndFlush(l1);
-
-        Ligne l2 = new Ligne();
-        l2.setCommande(c1); l2.setMedicament(m); l2.setQuantite(20);
-        // Note: constraint prevents l2 on same command/medicament?
-        // Ah, constraint is unique (commande, medicament). So we need separate medicament or separate command.
-
-        Commande c2 = new Commande();
-        c2.setDispensaire(d);
-        c2 = commandeRepository.saveAndFlush(c2);
-
-        l2.setCommande(c2);
-        ligneRepository.saveAndFlush(l2);
-
+        // Ce test se base sur les données contenues dans 'data.sql'
         // nombreArticlesCommandesPar
-        int total = dispensaireRepository.nombreArticlesCommandesPar(d.getCode());
-        assertEquals(30, total); // 10 + 20
+        int total = dispensaireRepository.nombreArticlesCommandesPar("2COM");
+        assertEquals(105, total, "105 médicaments commandés dans data.sql");
+        var dispensaireInconnu = "DSP99";
+        total = dispensaireRepository.nombreArticlesCommandesPar(dispensaireInconnu);
+        assertEquals(0, total, "La requête renvoie 0 pour un dispensaire inconnu");
     }
 
     @Test

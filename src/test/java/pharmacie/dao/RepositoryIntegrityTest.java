@@ -1,14 +1,22 @@
 package pharmacie.dao;
 
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.dao.DataIntegrityViolationException;
-import pharmacie.entity.*;
 
-import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.*;
+import pharmacie.entity.Categorie;
+import pharmacie.entity.Commande;
+import pharmacie.entity.Dispensaire;
+import pharmacie.entity.Ligne;
+import pharmacie.entity.Medicament;
 /**
  * Un jeu de tests vérifiant l'intégrité des données dans la base de données
  * Note : Les contraintes d'intégrité au moment où on enregistre les objets dans la BD.
@@ -55,14 +63,12 @@ class RepositoryIntegrityTest {
         c = categorieRepository.saveAndFlush(c);
         m = c.getMedicaments().get(0);
 
-        var reference = m.getReference();
-
-        assertNotNull(reference, "Medicament should be saved via cascade");
+        assertNotNull(m.getReference(), "Medicament should be saved via cascade");
 
         categorieRepository.delete(c);
         categorieRepository.flush();
 
-        Optional<Medicament> found = medicamentRepository.findById(reference);
+        Optional<Medicament> found = medicamentRepository.findById(m.getReference());
         assertFalse(found.isPresent(), "Medicament should be deleted when Categorie is deleted");
     }
 
@@ -98,9 +104,8 @@ class RepositoryIntegrityTest {
 
         dispensaireRepository.delete(d);
         dispensaireRepository.flush();
-        var numero = commande.getNumero();
 
-        Optional<Commande> found = commandeRepository.findById(numero);
+        Optional<Commande> found = commandeRepository.findById(commande.getNumero());
         assertFalse(found.isPresent(), "Commande should be deleted when Dispensaire is deleted");
     }
 
@@ -198,11 +203,11 @@ class RepositoryIntegrityTest {
 
     @Test
     void neDetruitPasUneCategorieSiSesMedicamentsSontCommandes() {
-        Categorie c = categorieRepository.findById(1).orElseThrow();
-        // La catégorie avec code 1 dans le jeu de données de test a 10 médicaments
+        Categorie c = categorieRepository.findById(98).orElseThrow();
+        // La catégorie avec code 98 dans le jeu de données de test a 7 médicaments
 
         int combienDeMedicaments = c.getMedicaments().size();
-        assertEquals(10,combienDeMedicaments, "Categorie with code 1 should have 10 Medicaments");
+        assertEquals(7,combienDeMedicaments, "Categorie with code 98 should have 7 Medicaments");
 
         try {
             categorieRepository.delete(c);
