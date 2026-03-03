@@ -25,7 +25,11 @@ import lombok.Setter;
 import lombok.ToString;
 
 @Entity
-@Getter @Setter @NoArgsConstructor @RequiredArgsConstructor @ToString
+@Getter
+@Setter
+@NoArgsConstructor
+@RequiredArgsConstructor
+@ToString
 public class Medicament {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -33,7 +37,7 @@ public class Medicament {
 	private Integer reference = null;
 
 	@NonNull // Lombok, génère une vérification dans le constructeur par défaut
-	@Column(unique=true, length = 255)
+	@Column(unique = true, length = 255)
 	private String nom;
 
 	private String quantiteParUnite = "Une boîte de 12";
@@ -47,12 +51,14 @@ public class Medicament {
 	 */
 	@ToString.Exclude
 	@PositiveOrZero
-	private int unitesEnStock = 0;
+	private Integer unitesEnStock = 0;
 
 	/**
 	 * Nombre d'unités "en commande"
-	 * Un médicament est "en commande" si il est dans une commande qui n'est pas encore expédiée
-	 * Incrementé quand on ajoute des unités de ce médicament à une ligne de commande
+	 * Un médicament est "en commande" si il est dans une commande qui n'est pas
+	 * encore expédiée
+	 * Incrementé quand on ajoute des unités de ce médicament à une ligne de
+	 * commande
 	 * Décrémenté quand on expédie une commande contenant ce médicament
 	 */
 	@ToString.Exclude
@@ -61,12 +67,13 @@ public class Medicament {
 
 	/**
 	 * Niveau de reapprovisionnement
-	 * Si le stock devient inférieur ou égal à ce niveau, 
-	 * on doit approvisionner de nouvelles unités de ce médicament auprès d'un fournisseur
+	 * Si le stock devient inférieur ou égal à ce niveau,
+	 * on doit approvisionner de nouvelles unités de ce médicament auprès d'un
+	 * fournisseur
 	 */
 	@ToString.Exclude
 	@PositiveOrZero
-	private int niveauDeReappro = 0;
+	private Integer niveauDeReappro = 0;
 
 	/**
 	 * Indique si le médicament est indisponible
@@ -77,16 +84,18 @@ public class Medicament {
 	@Column(length = 500)
 	private String imageURL;
 
+	@Column(length = 500)
+	private String urlImage;
+
 	@ToString.Exclude
 	@JsonIgnoreProperties("medicaments") // pour éviter la boucle infinie si on convertit le médicament en JSON
 	@NonNull // Lombok, génère une vérification dans le constructeur par défaut
 	@ManyToOne(optional = false) // La clé étrangère ne peut pas être nulle dans la table Medicament
-	private Categorie categorie ;
+	private Categorie categorie;
 
 	@ToString.Exclude
 	@JsonIgnore // On n'inclut pas les lignes quand on convertit le médicament en JSON
-	@OneToMany(mappedBy = "medicament", cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REFRESH})
+	@OneToMany(mappedBy = "medicament", cascade = { CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REFRESH })
 	private List<Ligne> lignes = new LinkedList<>();
-
 
 }
