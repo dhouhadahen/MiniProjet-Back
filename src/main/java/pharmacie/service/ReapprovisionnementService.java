@@ -6,10 +6,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+
+// Imports de SendGrid
+import com.sendgrid.Method;
+import com.sendgrid.Request;
+import com.sendgrid.Response;
+import com.sendgrid.SendGrid;
+import com.sendgrid.helpers.mail.Mail;
+import com.sendgrid.helpers.mail.objects.Content;
+import com.sendgrid.helpers.mail.objects.Email;
 
 import pharmacie.dao.MedicamentRepository;
 import pharmacie.entity.Fournisseur;
@@ -20,8 +27,11 @@ public class ReapprovisionnementService {
 
     private final MedicamentRepository medicamentRepository;
 
-    @Autowired
-    private JavaMailSender mailSender;
+    @Value("${sendgrid.api-key}")
+    private String sendGridApiKey;
+
+    @Value("${sendgrid.from-email}")
+    private String fromEmail;
 
     public ReapprovisionnementService(MedicamentRepository medicamentRepository) {
         this.medicamentRepository = medicamentRepository;
@@ -32,6 +42,7 @@ public class ReapprovisionnementService {
         List<Medicament> tousMedicaments = medicamentRepository.findAll();
         List<Medicament> aReappro = new ArrayList<>();
         
+        // 1. On cherche les médicaments en rupture de stock
         for (Medicament m : tousMedicaments) {
             if (m.getUnitesEnStock() < m.getNiveauDeReappro()) {
                 aReappro.add(m);
@@ -42,6 +53,7 @@ public class ReapprovisionnementService {
             return "Aucun médicament à réapprovisionner.";
         }
 
+        // 2. On groupe les médicaments par fournisseur
         Map<Fournisseur, List<Medicament>> parFournisseur = new HashMap<>();
 
         for (Medicament m : aReappro) {
@@ -60,44 +72,82 @@ public class ReapprovisionnementService {
         int nbMails = 0;
         StringBuilder resultat = new StringBuilder();
 
+        // 3. Préparation et envoi des mails
         for (Map.Entry<Fournisseur, List<Medicament>> entry : parFournisseur.entrySet()) {
             Fournisseur fournisseur = entry.getKey();
             List<Medicament> medicaments = entry.getValue();
 
-            StringBuilder contenuMail = new StringBuilder();
-            contenuMail.append("Bonjour ").append(fournisseur.getNom()).append(", veuillez livrer :\n");
-
+            // -- NOUVEAUTÉ : On regroupe les médicaments par CATÉGORIE pour ce fournisseur
+            Map<String, List<Medicament>> medocsParCategorie = new HashMap<>();
             for (Medicament m : medicaments) {
-                contenuMail.append(" - ").append(m.getNom())
-                           .append(" [Ref: ").append(m.getReference()).append("]\n");
+                String nomCat = m.getCategorie().getLibelle();
+                if (!medocsParCategorie.containsKey(nomCat)) {
+                    medocsParCategorie.put(nomCat, new ArrayList<>());
+                }
+                medocsParCategorie.get(nomCat).add(m);
             }
 
-            String sujet = "Commande de réapprovisionnement";
+            // -- Construction du contenu du mail
+            StringBuilder contenuMail = new StringBuilder();
+            contenuMail.append("Bonjour ").append(fournisseur.getNom()).append(",\n\n");
+            contenuMail.append("Veuillez nous transmettre un devis pour le réapprovisionnement des produits suivants :\n\n");
+
+            // On parcourt les catégories
+            for (Map.Entry<String, List<Medicament>> catEntry : medocsParCategorie.entrySet()) {
+                contenuMail.append("📦 CATÉGORIE : ").append(catEntry.getKey()).append("\n");
+                // On parcourt les médicaments de cette catégorie
+                for (Medicament m : catEntry.getValue()) {
+                    contenuMail.append("   - ").append(m.getNom())
+                               .append(" [Réf: ").append(m.getReference()).append("]\n");
+                }
+                contenuMail.append("\n");
+            }
+            
+            contenuMail.append("Cordialement,\nLa Pharmacie\n");
+
+            String sujet = "Demande de devis - Réapprovisionnement";
 
             // =================================================================
-            // AFFICHAGE DANS LE TERMINAL EXACTEMENT COMME TA CAPTURE D'ÉCRAN
+            // AFFICHAGE AMÉLIORÉ DANS LE TERMINAL
             // =================================================================
-            System.out.println("--------------------------------------------------");
-            System.out.println("SIMULATION ENVOI EMAIL À : " + fournisseur.getEmail());
-            System.out.println("OBJET : " + sujet);
-            System.out.println("CONTENU :");
+            System.out.println("\n======================================================================");
+            System.out.println("📧 NOUVEL E-MAIL ENVOYÉ (SIMULATION & ENVOI RÉEL)");
+            System.out.println("======================================================================");
+            System.out.println("À      : " + fournisseur.getEmail());
+            System.out.println("OBJET  : " + sujet);
+            System.out.println("----------------------------------------------------------------------");
             System.out.print(contenuMail.toString());
-            System.out.println("--------------------------------------------------");
+            System.out.println("======================================================================");
             // =================================================================
 
+            // -- Envoi via SendGrid
             try {
-                SimpleMailMessage message = new SimpleMailMessage();
-                message.setTo(fournisseur.getEmail()); 
-                message.setSubject(sujet);
-                message.setText(contenuMail.toString());
+                Email from = new Email(fromEmail);
+                Email to = new Email(fournisseur.getEmail());
+                Content content = new Content("text/plain", contenuMail.toString());
+                Mail mail = new Mail(from, sujet, to, content);
+
+                SendGrid sg = new SendGrid(sendGridApiKey);
+                Request request = new Request();
+                request.setMethod(Method.POST);
+                request.setEndpoint("mail/send");
+                request.setBody(mail.build());
                 
-                mailSender.send(message); // Tente d'envoyer le vrai mail
-                nbMails++;
+                Response response = sg.api(request);
+                
+                if (response.getStatusCode() >= 200 && response.getStatusCode() < 300) {
+                    nbMails++;
+                    System.out.println("✅ Statut API SendGrid : SUCCÈS (" + response.getStatusCode() + ")\n");
+                } else {
+                    System.out.println("❌ Erreur SendGrid : " + response.getBody() + "\n");
+                }
             } catch (Exception e) {
+                System.out.println("❌ Exception d'envoi : " + e.getMessage() + "\n");
             }
+            
             resultat.append("Mail traité pour ").append(fournisseur.getNom()).append("\n");
         }
 
-        return resultat.toString() + "\nTotal mails envoyés (ou simulés) : " + nbMails;
+        return resultat.toString() + "\nTotal mails envoyés : " + nbMails;
     }
 }
