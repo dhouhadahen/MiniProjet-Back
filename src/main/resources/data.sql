@@ -1,6 +1,6 @@
 -- Données de base pour le projet Pharmacie
 -- Dispensaire (Etablissements de santé qui passent commande de médicaments)
--- Le fichier est chargé au démarrage de l''application
+-- Le fichier est chargé au démarrage de l'application
 
 -- Insertion des catégories de médicaments
 INSERT INTO CATEGORIE (CODE, LIBELLE, DESCRIPTION) VALUES
@@ -17,8 +17,9 @@ INSERT INTO CATEGORIE (CODE, LIBELLE, DESCRIPTION) VALUES
 ALTER TABLE Categorie ALTER COLUMN code RESTART WITH 11;
 
 -- Catégorie 1: Antalgiques et Antipyrétiques
+-- /!\ MODIFICATION ICI : Le Paracétamol a maintenant 5 en stock (pour déclencher l'alerte à 50) /!\
 INSERT INTO MEDICAMENT (NOM, CATEGORIE_CODE, QUANTITE_PAR_UNITE, PRIX_UNITAIRE, UNITES_EN_STOCK, UNITES_COMMANDEES, NIVEAU_DE_REAPPRO, INDISPONIBLE, imageURL) VALUES
-('Paracétamol 500mg', 1, 'Boîte de 16 comprimés', 2.50, 500, 0, 50, false, 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=400'),
+('Paracétamol 500mg', 1, 'Boîte de 16 comprimés', 2.50, 5, 0, 50, false, 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=400'),
 ('Paracétamol 1000mg', 1, 'Boîte de 8 comprimés', 3.20, 350, 0, 40, false, 'https://images.unsplash.com/photo-1471864190281-a93a3070b6de?w=400'),
 ('Ibuprofène 200mg', 1, 'Boîte de 20 comprimés', 3.80, 400, 0, 45, false, 'https://images.unsplash.com/photo-1550572017-edd951aa8f72?w=400'),
 ('Ibuprofène 400mg', 1, 'Boîte de 12 comprimés', 4.50, 320, 0, 35, false, 'https://images.unsplash.com/photo-1587854692152-cbe660dbde88?w=400'),
@@ -181,3 +182,18 @@ INSERT INTO LIGNE (COMMANDE_NUMERO, MEDICAMENT_REFERENCE, QUANTITE) VALUES
 (6, 6, 110), (6, 16, 65), (6, 26, 85), (6, 36, 60), (6, 91, 70),
 (7, 7, 80), (7, 17, 50), (7, 27, 95), (7, 37, 55), (7, 100, 45),
 (8, 8, 100), (8, 18, 75), (8, 28, 80), (8, 38, 70), (8, 48, 60);
+
+-- /!\ AJOUT INDISPENSABLE POUR LES MAILS : Fournisseurs et liens avec les catégories /!\
+INSERT INTO FOURNISSEUR (NOM, EMAIL) VALUES
+('Grand Fourni', 'dahenedhouha+grandfourni@gmail.com'),
+('Fourni Viste', 'dahenedhouha+fourniviste@gmail.com'),
+('Pharma Fourni', 'dahenedhouha+pharmafourni@gmail.com'),
+('Fourni Deluxe', 'dahenedhouha+fournieluxe@gmail.com'),
+('Fourni Plus', 'dahenedhouha+fourniplus@gmail.com');
+
+INSERT INTO FOURNISSEUR_CATEGORIE (FOURNISSEUR_ID, CATEGORIE_CODE) VALUES
+(1, 1), (1, 2), (1, 3), (1, 4), (1, 5),
+(2, 1), (2, 2), (2, 6), (2, 7), (2, 8),
+(3, 1), (3, 2), (3, 3), (3, 4), (3, 5),
+(4, 6), (4, 7), (4, 8), (4, 9), (4, 10),
+(5, 8), (5, 9), (5, 10), (5, 5), (5, 7);
