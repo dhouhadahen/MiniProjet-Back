@@ -191,7 +191,7 @@ INSERT INTO FOURNISSEUR (NOM, EMAIL) VALUES
 ('Fourni Deluxe', 'dahenedhouha+fournieluxe@gmail.com'),
 ('Fourni Plus', 'dahenedhouha+fourniplus@gmail.com');
 
-INSERT INTO FOURNISSEUR_CATEGORIE (FOURNISSEUR_ID, CATEGORIE_CODE) VALUES
+INSERT INTO CATEGORIE_FOURNISSEUR (FOURNISSEUR_ID, CATEGORIE_CODE) VALUES
 (1, 1), (1, 2), (1, 3), (1, 4), (1, 5),
 (2, 1), (2, 2), (2, 6), (2, 7), (2, 8),
 (3, 1), (3, 2), (3, 3), (3, 4), (3, 5),
